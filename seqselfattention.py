@@ -13,13 +13,14 @@ from tensorflow.keras.layers import Layer
 class webformerAttention(Layer):
     
     def __init__(self,maxposition=None,output_dim=None,kernel_initializer='glorot_uniform',hiddensize=768,**kwargs):
+        super().__init__()
         if output_dim==None:
             self.output_dim=hiddensize
         else:
             self.output_dim=output_dim
         self.kernel_initializer = initializers.get(kernel_initializer)
         self.hiddensize=hiddensize
-        super(MySelfAttention,self).__init__(**kwargs)
+#        super(MySelfAttention,self).__init__(**kwargs)
         self.supports_masking = True
         self.max_position=maxposition
         
@@ -75,7 +76,7 @@ class webformerAttention(Layer):
              trainable=True)
         self.built = True
         
-    def call(self,inputs,**kwargs):
+    def call(self,inputs,final_layer=False,**kwargs):
 
         field, text, html,textsequencematrix,positionembedding= inputs[0], inputs[1], inputs[2], inputs[-1]
         H2Hmask=inputs[4]
@@ -150,7 +151,10 @@ class webformerAttention(Layer):
         
         html=html1+html2
         text=text1+text2
-        return [field,text,html,inputs[3],inputs[4],inputs[5],inputs[6],inputs[7],inputs[8],inputs[9]]
+        if final_layer==False:
+            return [field,text,html,inputs[3],inputs[4],inputs[5],inputs[6],inputs[7],inputs[8],inputs[9]]
+        else:
+            return [field,text,html]
     
 
 
@@ -227,49 +231,49 @@ class webformerAttention(Layer):
 
 
 
-text=K.ones((16,500,768))
-html=K.ones((500,500,768))
-text=K.random_normal((4,10,20))
-html=K.random_normal((10,10,20))
-html = tf.expand_dims(html, 0)
-text = tf.expand_dims(text, 1)
-result=tf.add(text,html)
-result[0,0,1,:]==text[0,0,1,:]+html[0,0,1,:]
+# text=K.ones((16,500,768))
+# html=K.ones((500,500,768))
+# text=K.random_normal((4,10,20))
+# html=K.random_normal((10,10,20))
+# html = tf.expand_dims(html, 0)
+# text = tf.expand_dims(text, 1)
+# result=tf.add(text,html)
+# result[0,0,1,:]==text[0,0,1,:]+html[0,0,1,:]
 
 
 
-test=tf.convert_to_tensor([[1,1,1,1,1,0,0,0,0],
-                      [1,1,1,1,1,1,1,0,0],
-                      [1,1,1,1,1,0,0,0,0]])
-c=tf.cast(tf.equal(test, 0),tf.float32)
+# test=tf.convert_to_tensor([[1,1,1,1,1,0,0,0,0],
+#                       [1,1,1,1,1,1,1,0,0],
+#                       [1,1,1,1,1,0,0,0,0]])
+# c=tf.cast(tf.equal(test, 0),tf.float32)
 
 
 
 
 
-another=K.placeholder((16,1,500,768))
-another2=K.placeholder((16,500,500,768))
+# another=K.placeholder((16,1,500,768))
+# another2=K.placeholder((16,500,500,768))
 
-another=K.ones((16,500,768))
-another = tf.expand_dims(another, 2)
-field=tf.ones((32,5,768))
-testattention=MySelfAttention()
-testattention(inputs=[field,html,text])
-K.shape(tf.reduce_sum(tf.multiply(another,another2,),axis=-1)#tf.squeeze(axes=(-1,-1)
-K.shape(tf.einsum("mnp,onp->mon",text,html))
-result=tf.einsum("mnp,onp->mon",text,html)
+# another=K.ones((16,500,768))
+# another = tf.expand_dims(another, 2)
+# field=tf.ones((32,5,768))
+# testattention=MySelfAttention()
+# testattention(inputs=[field,html,text])
+# K.shape(tf.reduce_sum(tf.multiply(another,another2,),axis=-1)#tf.squeeze(axes=(-1,-1)
+# K.shape(tf.einsum("mnp,onp->mon",text,html))
+# result=tf.einsum("mnp,onp->mon",text,html)
 
-result[0,0,0]==K.dot(text[0,0,:],html[0,0,:])
-
-
-
-test1=K.placeholder((3,768))
-test2=K.placeholder((1,768))
-test3=K.placeholder((16,500,500),dtype="int32")
-test4=tf.add(tf.expand_dims(test1,1),K.gather(test2, test3))
-test5=K.placeholder((16,500,768))
-tf.reduce_sum(tf.multiply(tf.expand_dims(test5,1),test4),axis=-1)
+# result[0,0,0]==K.dot(text[0,0,:],html[0,0,:])
 
 
 
-tf.concat([test1,test2], axis=0, name='concat')：
+# test1=K.placeholder((3,768))
+# test2=K.placeholder((1,768))
+# test3=K.placeholder((16,500,500),dtype="int32")
+# test4=tf.add(tf.expand_dims(test1,1),K.gather(test2, test3))
+# test5=K.placeholder((16,500,768))
+# tf.reduce_sum(tf.multiply(tf.expand_dims(test5,1),test4),axis=-1)
+
+
+
+# tf.concat([test1,test2], axis=0, name='concat')：

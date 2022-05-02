@@ -18,16 +18,16 @@ from tensorflow.keras.layers import Layer
 class Myembeddinglayer(Layer):
     
     def __init__(self,T2Tattentionwidth,positionembeddinglength,kernel_initializer='glorot_uniform',
-                 pretrainedtextweight=None,hiddensize=768,**kwargs):
+                 pretrainedtextweight=None,output_dim=None,hiddensize=768,**kwargs):
+        super().__init__()
         if output_dim==None:
             self.output_dim=hiddensize
         else:
             self.output_dim=output_dim
         self.kernel_initializer = initializers.get(kernel_initializer)
         self.hiddensize=hiddensize
-        super(MySelfAttention,self).__init__(**kwargs)
-        self.supports_masking = True
-        self.local_radius=local_radius
+#        super(MySelfAttention,self).__init__(**kwargs)
+#        self.supports_masking = Trues
         self.pretrainedtextweight=pretrainedtextweight
         self.supports_masking = True
         self.positionembeddinglength=positionembeddinglength#用来计算相对位置编码的长度
@@ -36,11 +36,11 @@ class Myembeddinglayer(Layer):
         
     def build(self,input_shape):
         self.w_html=self.add_weight(name='W_V_F',
-             shape=(self.hiddensize,self.hiddensize),
+             shape=(self.tagsize,self.hiddensize),
              initializer=self.kernel_initializer,
              trainable=True)
         self.w_text=self.add_weight(name='W_V_F',
-             shape=(self.hiddensize,self.hiddensize),
+             shape=(self.wordsize,self.hiddensize),
              initializer=self.my_init,
              trainable=True)
         self.position_embedding=self.add_weight(name='relative_position_embedding',
@@ -63,7 +63,7 @@ class Myembeddinglayer(Layer):
         H2Hmask=self.computeH2Hmask(inputs[3][0],htmlsequencelength)#inputs[3]包含两部分，一部分是html edge list,一部分是inner text list
         H2Tmask=self.computeH2Tmask(inputs[3][1],textpadlength,htmlsequencelength)
         T2Hmask=self.computeT2Hmask(htmllist)
-        htmledge_embedding_complete=tf.concat((self.htmledge_embedding,K.ones((1,self.hiddensize))),axis=0)
+        htmledge_embedding_complete=tf.concat((K.ones((1,self.hiddensize)),self.htmledge_embedding),axis=0)
         return [field_embeds,text_embeds,html_embeds,T2Tmask,H2Hmask,H2Tmask,T2Hmask,self.position_embedding,htmledge_embedding_complete]
 
 
@@ -118,8 +118,17 @@ class Myembeddinglayer(Layer):
 
 
 
-    # def my_init(self,**kwargs):
-    #     return self.pretrainedtextweight#K.random_normal(shape, dtype=dtype)
+    def my_init(self,**kwargs):#这个函数是给word embedding权重初始化的
+        return self.pretrainedtextweight#K.random_normal(shape, dtype=dtype)
+
+
+
+
+#    sequencelist=[[-1,5,9,20,50,53,59],#这个最后一个数字不必是textlist的总长度
+#                     [-1,24,34,50,59]]#text pad后的总长度是60
+
+# em=Myembeddinglayer(T2Tattentionwidth=6,positionembeddinglength=4)
+# em.computeT2Tmask(sequencelist,60).numpy()
 
 
 
@@ -132,87 +141,80 @@ class Myembeddinglayer(Layer):
 
 
 
+# class TFBertEmbeddings(tf.keras.layers.Layer):
+#     """Construct the embeddings from word, position and token_type embeddings."""
 
+#     def __init__(self, config: BertConfig, **kwargs):
+#         super().__init__(**kwargs)
 
+#         self.vocab_size = config.vocab_size
+#         self.type_vocab_size = config.type_vocab_size
+#         self.hidden_size = config.hidden_size
+#         self.max_position_embeddings = config.max_position_embeddings
+#         self.initializer_range = config.initializer_range
+#         self.LayerNorm = tf.keras.layers.LayerNormalization(epsilon=config.layer_norm_eps, name="LayerNorm")
+#         self.dropout = tf.keras.layers.Dropout(rate=config.hidden_dropout_prob)
 
+#     def build(self, input_shape: tf.TensorShape):
+#         with tf.name_scope("word_embeddings"):
+#             self.weight = self.add_weight(
+#                 name="weight",
+#                 shape=[self.vocab_size, self.hidden_size],
+#                 initializer=get_initializer(self.initializer_range),
+#             )
 
+#         with tf.name_scope("token_type_embeddings"):
+#             self.token_type_embeddings = self.add_weight(
+#                 name="embeddings",
+#                 shape=[self.type_vocab_size, self.hidden_size],
+#                 initializer=get_initializer(self.initializer_range),
+#             )
 
+#         with tf.name_scope("position_embeddings"):
+#             self.position_embeddings = self.add_weight(
+#                 name="embeddings",
+#                 shape=[self.max_position_embeddings, self.hidden_size],
+#                 initializer=get_initializer(self.initializer_range),
+#             )
 
+#         super().build(input_shape)
 
-class TFBertEmbeddings(tf.keras.layers.Layer):
-    """Construct the embeddings from word, position and token_type embeddings."""
+#     def call(
+#         self,
+#         input_ids: tf.Tensor = None,
+#         position_ids: tf.Tensor = None,
+#         token_type_ids: tf.Tensor = None,
+#         inputs_embeds: tf.Tensor = None,
+#         past_key_values_length=0,
+#         training: bool = False,
+#     ) -> tf.Tensor:
+#         """
+#         Applies embedding based on inputs tensor.
+#         Returns:
+#             final_embeddings (`tf.Tensor`): output embedding tensor.
+#         """
+#         if input_ids is None and inputs_embeds is None:
+#             raise ValueError("Need to provide either `input_ids` or `input_embeds`.")
 
-    def __init__(self, config: BertConfig, **kwargs):
-        super().__init__(**kwargs)
+#         if input_ids is not None:
+#             inputs_embeds = tf.gather(params=self.weight, indices=input_ids)
 
-        self.vocab_size = config.vocab_size
-        self.type_vocab_size = config.type_vocab_size
-        self.hidden_size = config.hidden_size
-        self.max_position_embeddings = config.max_position_embeddings
-        self.initializer_range = config.initializer_range
-        self.LayerNorm = tf.keras.layers.LayerNormalization(epsilon=config.layer_norm_eps, name="LayerNorm")
-        self.dropout = tf.keras.layers.Dropout(rate=config.hidden_dropout_prob)
+#         input_shape = shape_list(inputs_embeds)[:-1]
 
-    def build(self, input_shape: tf.TensorShape):
-        with tf.name_scope("word_embeddings"):
-            self.weight = self.add_weight(
-                name="weight",
-                shape=[self.vocab_size, self.hidden_size],
-                initializer=get_initializer(self.initializer_range),
-            )
+#         if token_type_ids is None:
+#             token_type_ids = tf.fill(dims=input_shape, value=0)
 
-        with tf.name_scope("token_type_embeddings"):
-            self.token_type_embeddings = self.add_weight(
-                name="embeddings",
-                shape=[self.type_vocab_size, self.hidden_size],
-                initializer=get_initializer(self.initializer_range),
-            )
+#         if position_ids is None:
+#             position_ids = tf.expand_dims(
+#                 tf.range(start=past_key_values_length, limit=input_shape[1] + past_key_values_length), axis=0
+#             )
 
-        with tf.name_scope("position_embeddings"):
-            self.position_embeddings = self.add_weight(
-                name="embeddings",
-                shape=[self.max_position_embeddings, self.hidden_size],
-                initializer=get_initializer(self.initializer_range),
-            )
+#         position_embeds = tf.gather(params=self.position_embeddings, indices=position_ids)
+#         token_type_embeds = tf.gather(params=self.token_type_embeddings, indices=token_type_ids)
+#         final_embeddings = inputs_embeds + position_embeds + token_type_embeds
+#         final_embeddings = self.LayerNorm(inputs=final_embeddings)
+#         final_embeddings = self.dropout(inputs=final_embeddings, training=training)
 
-        super().build(input_shape)
+#         return final_embeddings
 
-    def call(
-        self,
-        input_ids: tf.Tensor = None,
-        position_ids: tf.Tensor = None,
-        token_type_ids: tf.Tensor = None,
-        inputs_embeds: tf.Tensor = None,
-        past_key_values_length=0,
-        training: bool = False,
-    ) -> tf.Tensor:
-        """
-        Applies embedding based on inputs tensor.
-        Returns:
-            final_embeddings (`tf.Tensor`): output embedding tensor.
-        """
-        if input_ids is None and inputs_embeds is None:
-            raise ValueError("Need to provide either `input_ids` or `input_embeds`.")
-
-        if input_ids is not None:
-            inputs_embeds = tf.gather(params=self.weight, indices=input_ids)
-
-        input_shape = shape_list(inputs_embeds)[:-1]
-
-        if token_type_ids is None:
-            token_type_ids = tf.fill(dims=input_shape, value=0)
-
-        if position_ids is None:
-            position_ids = tf.expand_dims(
-                tf.range(start=past_key_values_length, limit=input_shape[1] + past_key_values_length), axis=0
-            )
-
-        position_embeds = tf.gather(params=self.position_embeddings, indices=position_ids)
-        token_type_embeds = tf.gather(params=self.token_type_embeddings, indices=token_type_ids)
-        final_embeddings = inputs_embeds + position_embeds + token_type_embeds
-        final_embeddings = self.LayerNorm(inputs=final_embeddings)
-        final_embeddings = self.dropout(inputs=final_embeddings, training=training)
-
-        return final_embeddings
-
-
+# """

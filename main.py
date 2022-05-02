@@ -38,6 +38,26 @@ embeddinglayer.variables
 dir(embeddinglayer)
 embeddinglayer.word_embeddings#这个返回的就是token embedding shape=(21128, 768)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #计算T2T mask矩阵，这个其实也分两步，只不过其中一步可以直接计算
 testsample=[[-1,5,9,20,50,53,59],
             [-1,24,34,50,59]]#text pad后的总长度是60
