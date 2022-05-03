@@ -1,18 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 27 12:56:27 2022
-
-@author: 1222
-"""
 
 from tensorflow.keras import initializers
 from tensorflow.keras import activations
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Layer
+import tensorflow as tf
  
 class webformerAttention(Layer):
     
-    def __init__(self,maxposition=None,output_dim=None,kernel_initializer='glorot_uniform',hiddensize=768,**kwargs):
+    def __init__(self,maxposition=6,output_dim=None,kernel_initializer='glorot_uniform',hiddensize=384,**kwargs):
         super().__init__()
         if output_dim==None:
             self.output_dim=hiddensize
@@ -78,9 +73,10 @@ class webformerAttention(Layer):
         
     def call(self,inputs,final_layer=False,**kwargs):
 
-        field, text, html,textsequencematrix,positionembedding= inputs[0], inputs[1], inputs[2], inputs[-1]
+        field, text, html= inputs[0], inputs[1], inputs[2], 
+        positionembedding=inputs[7]
         H2Hmask=inputs[4]
-        htmledgeembedding=inputs[-1]#batchsize htmllength htmllength
+        htmledgeembedding=inputs[8]#batchsize htmllength htmllength
         H2Tmask=inputs[5]
         T2Tmask=inputs[3]
         T2Hmask=inputs[6]
@@ -107,7 +103,7 @@ class webformerAttention(Layer):
         #T2T attention
         T2T_q=K.dot(text,self.W_Q_T2T)#x(batchsize,sequencelength,hidden size)(hiddensize, hiddensize)(batchsize,sequencelength,hidden size)
         pos_ids=self.cal_rel_pos_matri(textlength)
-        T2T_k=tf.add(tf.expand_dims(K.dot(text,self.W_K_T2T),1),tf.expand_dims(K.gather(positionembeddings, pos_ids), 0))
+        T2T_k=tf.add(tf.expand_dims(K.dot(text,self.W_K_T2T),1),tf.expand_dims(K.gather(positionembedding, pos_ids), 0))
         T2T_e=tf.reduce_sum(tf.multiply(tf.expand_dims(T2T_q,1),T2T_k),axis=-1)
         #T2T_e=K.batch_dot(T2T_q,K.permute_dimensions(T2T_k,[0,2,1]))#把k转置，并与q点乘,dot的维度长度必须相同
         
@@ -152,21 +148,21 @@ class webformerAttention(Layer):
         html=html1+html2
         text=text1+text2
         if final_layer==False:
-            return [field,text,html,inputs[3],inputs[4],inputs[5],inputs[6],inputs[7],inputs[8],inputs[9]]
+            return [field,text,html,inputs[3],inputs[4],inputs[5],inputs[6],inputs[7],inputs[8]]
         else:
             return [field,text,html]
     
 
 
-    def compute_mask(self, inputs, mask=None):
-        if isinstance(mask, list):
-            mask = mask[0]
-        if self.return_attention:
-            return [mask, None]
-        return mask
+    # def compute_mask(self, inputs, mask=None):
+    #     if isinstance(mask, list):
+    #         mask = mask[0]
+    #     if self.return_attention:
+    #         return [mask, None]
+    #     return mask
     
-    def compute_output_shape(self,input_shape):
-        return (input_shape[0],input_shape[1],self.output_dim)
+    # def compute_output_shape(self,input_shape):
+    #     return (input_shape[0],input_shape[1],self.output_dim)
 
     def cal_rel_pos_matri(self,textlength):
         # batchsequencelist=inputs[1],inputs[4]#数据以batch的形式输入
@@ -222,58 +218,3 @@ class webformerAttention(Layer):
         return pos_ids
 
 
-
-
-
-
-
-
-
-
-
-# text=K.ones((16,500,768))
-# html=K.ones((500,500,768))
-# text=K.random_normal((4,10,20))
-# html=K.random_normal((10,10,20))
-# html = tf.expand_dims(html, 0)
-# text = tf.expand_dims(text, 1)
-# result=tf.add(text,html)
-# result[0,0,1,:]==text[0,0,1,:]+html[0,0,1,:]
-
-
-
-# test=tf.convert_to_tensor([[1,1,1,1,1,0,0,0,0],
-#                       [1,1,1,1,1,1,1,0,0],
-#                       [1,1,1,1,1,0,0,0,0]])
-# c=tf.cast(tf.equal(test, 0),tf.float32)
-
-
-
-
-
-# another=K.placeholder((16,1,500,768))
-# another2=K.placeholder((16,500,500,768))
-
-# another=K.ones((16,500,768))
-# another = tf.expand_dims(another, 2)
-# field=tf.ones((32,5,768))
-# testattention=MySelfAttention()
-# testattention(inputs=[field,html,text])
-# K.shape(tf.reduce_sum(tf.multiply(another,another2,),axis=-1)#tf.squeeze(axes=(-1,-1)
-# K.shape(tf.einsum("mnp,onp->mon",text,html))
-# result=tf.einsum("mnp,onp->mon",text,html)
-
-# result[0,0,0]==K.dot(text[0,0,:],html[0,0,:])
-
-
-
-# test1=K.placeholder((3,768))
-# test2=K.placeholder((1,768))
-# test3=K.placeholder((16,500,500),dtype="int32")
-# test4=tf.add(tf.expand_dims(test1,1),K.gather(test2, test3))
-# test5=K.placeholder((16,500,768))
-# tf.reduce_sum(tf.multiply(tf.expand_dims(test5,1),test4),axis=-1)
-
-
-
-# tf.concat([test1,test2], axis=0, name='concat')：

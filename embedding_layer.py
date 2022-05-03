@@ -13,12 +13,12 @@ import numpy as np
 from tensorflow.keras import initializers
 from tensorflow.keras import activations
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Layer,Dense
  
 class Myembeddinglayer(Layer):
     
-    def __init__(self,T2Tattentionwidth,positionembeddinglength,kernel_initializer='glorot_uniform',
-                 pretrainedtextweight=None,output_dim=None,hiddensize=768,**kwargs):
+    def __init__(self,T2Tattentionwidth,tagsize,wordembedinit,T2Tmaxposition=4, wordsize=21128,kernel_initializer='glorot_uniform',
+                 pretrainedtextweight=None,output_dim=None,hiddensize=384,**kwargs):
         super().__init__()
         if output_dim==None:
             self.output_dim=hiddensize
@@ -30,9 +30,12 @@ class Myembeddinglayer(Layer):
 #        self.supports_masking = Trues
         self.pretrainedtextweight=pretrainedtextweight
         self.supports_masking = True
-        self.positionembeddinglength=positionembeddinglength#用来计算相对位置编码的长度
+        self.T2Tmaxposition=T2Tmaxposition#用来计算相对位置编码的长度
         self.T2Tattentionwidth=T2Tattentionwidth
-        
+        self.wordsize=wordsize
+        self.tagsize=tagsize
+        self.wordembeddinit=wordembedinit
+#        self.T2Tmaxposition=T2Tmaxposition
         
     def build(self,input_shape):
         self.w_html=self.add_weight(name='W_V_F',
@@ -40,25 +43,27 @@ class Myembeddinglayer(Layer):
              initializer=self.kernel_initializer,
              trainable=True)
         self.w_text=self.add_weight(name='W_V_F',
-             shape=(self.wordsize,self.hiddensize),
-             initializer=self.my_init,
+             shape=(self.wordsize,768),
+             initializer=self.wordembeddinit,
              trainable=True)
         self.position_embedding=self.add_weight(name='relative_position_embedding',
-             shape=(self.positionembeddinglength,self.hiddensize),
-             initializer=self.my_init,
+             shape=((self.T2Tmaxposition)*2+1,self.hiddensize),
+             initializer=self.kernel_initializer,
              trainable=True)
         self.htmledge_embedding=self.add_weight(name='htmledge_embedding',
              shape=(3,self.hiddensize),
-             initializer=self.my_init,
+             initializer=self.kernel_initializer,
              trainable=True)
+        self.dense1=Dense(self.hiddensize)#activation='relu'
 
-    def call(self,inputs,**kwargs):
+    def call(self,inputs):
         fieldlist,textlist,htmllist,sequencelist=inputs[0],inputs[1],inputs[2],inputs[4]
         textpadlength=textlist.shape[1]
         htmlsequencelength=htmllist.shape[1]
-        field_embeds = tf.gather(params=self.w_text, indices=field_list)
-        text_embeds = tf.gather(params=self.w_text, indices=text_list)
-        html_embeds = tf.gather(params=self.w_html, indices=html_list)
+        field_embeds = tf.gather(params=self.w_text, indices=fieldlist)
+        text_embeds = tf.gather(params=self.w_text, indices=textlist)
+        text_embeds=self.dense1(text_embeds)
+        html_embeds = tf.gather(params=self.w_html, indices=htmllist)
         T2Tmask=self.computeT2Tmask(sequencelist,textpadlength)
         H2Hmask=self.computeH2Hmask(inputs[3][0],htmlsequencelength)#inputs[3]包含两部分，一部分是html edge list,一部分是inner text list
         H2Tmask=self.computeH2Tmask(inputs[3][1],textpadlength,htmlsequencelength)
@@ -87,7 +92,7 @@ class Myembeddinglayer(Layer):
     
     def computeH2Hmask(self,html_edge_list,htmlsequencelength):
         ##计算H2H mask矩阵，这个还分为2步
-        htmledgematrix=np.ones((len(html_edge_list),htmlsequencelength,htmlsequencelength))#batchsize,htmlpadlength,htmlpadlength
+        htmledgematrix=np.zeros((len(html_edge_list),htmlsequencelength,htmlsequencelength))#batchsize,htmlpadlength,htmlpadlength
         #shape=np.shape(test)
         for i in range(len(html_edge_list)):
             for j in range(len(html_edge_list[i])):
@@ -95,16 +100,16 @@ class Myembeddinglayer(Layer):
         #计算H2H mask矩阵
         #equal = tf.equal(htmledgematrix, threshold)
         #c=tf.cast(c,tf.float32)
-        return tf.convert_to_tensor(htmledgematrix,dtype=tf.int64)
+        return tf.convert_to_tensor(htmledgematrix,dtype=tf.int32)
 
 
     def computeH2Tmask(self,html_text_edge_list,textpadlength,htmlsequencelength):
         #计算H2T mask矩阵
         #html_text_edge_list(html_index,text_index)
-        H2Tmask=np.ones((len(html_text_edge_list),60,70))#batchsize,htmllength,textpadlength
+        H2Tmask=np.ones((len(html_text_edge_list),htmlsequencelength,textpadlength))#batchsize,htmllength,textpadlength
         for i in range(len(html_text_edge_list)):
             for j in range(len(html_text_edge_list[i])):
-                H2Tmask[i][html_edge_list[i][j][0]][html_edge_list[i][j][1]]=0
+                H2Tmask[i][html_text_edge_list[i][j][0]][html_text_edge_list[i][j][1]]=0
         return tf.convert_to_tensor(H2Tmask,dtype=tf.float32)
     
     def computeT2Hmask(self,htmllist):
@@ -115,11 +120,11 @@ class Myembeddinglayer(Layer):
         return T2Hmask#batchsize,htmllistlength
 #        mask = K.expand_dims(K.cast(mask, K.floatx()), axis=1)#expand_dims增加向量维度，就是增加一个维度为一的维度
 #        e=e-10000*mask
+    def getpositionembedding(self,):
+        return self.position_embedding.numpy()
 
 
 
-    def my_init(self,**kwargs):#这个函数是给word embedding权重初始化的
-        return self.pretrainedtextweight#K.random_normal(shape, dtype=dtype)
 
 
 
@@ -131,7 +136,19 @@ class Myembeddinglayer(Layer):
 # em.computeT2Tmask(sequencelist,60).numpy()
 
 
+class My_init(tf.keras.initializers.Initializer):
 
+    def __init__(self,):
+        super().__init__()
+
+    def __call__(self, shape, dtype=None):
+        embedding = np.load(r"C:\pycode\ner\webformer implementation\bert_word_embedding.dat",allow_pickle=True)
+        return tf.convert_to_tensor(embedding)#K.random_normal(shape, dtype=dtype)
+      # return tf.random.normal(
+      #     shape, mean=self.mean, stddev=self.stddev, dtype=dtype)
+
+    # def get_config(self):  # To support serialization
+    #   return {'mean': self.mean, 'stddev': self.stddev}
 
 
 
