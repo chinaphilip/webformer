@@ -26,12 +26,12 @@ for index,tag in enumerate(taglist):
 
 
 #准备测试样本
-bfieldlist=[]
-bhtmllist=[]
-btextlist=[]
-bhtmledgelist=[]#[html1,edgetype,html2]
-binnertextlist=[]#[html,text]
-btextsequencelist=[]
+bfieldlist=[]#这个是要抽取的属性集合
+bhtmllist=[]#这个是网页的html节点list
+btextlist=[]#这个是网页的字符list
+bhtmledgelist=[]#[html1,edgetype,html2]具体表示方式可以在函数traversehtml中看到
+binnertextlist=[]#[html,text]#这个存储tag和text之间的关系
+btextsequencelist=[]#这个存储text和text之间的关系
 
 path="G:\lecture_spider_data\shangcai_"#这里放样本数据集的path
 
