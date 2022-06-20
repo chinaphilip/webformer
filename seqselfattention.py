@@ -9,11 +9,12 @@ from tensorflow.keras import initializers
 from tensorflow.keras import activations
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Layer
+import tensorflow as tf
  
 class webformerAttention(Layer):
     
-    def __init__(self,maxposition=None,output_dim=None,kernel_initializer='glorot_uniform',hiddensize=768,**kwargs):
-        super().__init__()
+    def __init__(self,maxposition=6,output_dim=None,kernel_initializer='glorot_uniform',hiddensize=384,**kwargs):
+        super().__init__()#webformerAttention,self
         if output_dim==None:
             self.output_dim=hiddensize
         else:
@@ -78,9 +79,10 @@ class webformerAttention(Layer):
         
     def call(self,inputs,final_layer=False,**kwargs):
 
-        field, text, html,textsequencematrix,positionembedding= inputs[0], inputs[1], inputs[2], inputs[-1]
+        field, text, html= inputs[0], inputs[1], inputs[2], 
+        positionembedding=inputs[7]
         H2Hmask=inputs[4]
-        htmledgeembedding=inputs[-1]#batchsize htmllength htmllength
+        htmledgeembedding=inputs[8]#batchsize htmllength htmllength
         H2Tmask=inputs[5]
         T2Tmask=inputs[3]
         T2Hmask=inputs[6]
@@ -90,24 +92,24 @@ class webformerAttention(Layer):
         text_v=K.dot(text,self.W_V_T)
         html_v=K.dot(html,self.W_V_H)
         #H2H attention
-        H2H_q=K.dot(html,self.W_Q_H2H)#x(batchsize,sequencelength,hidden size)(hiddensize, hiddensize)(batchsize,sequencelength,hidden size)
+        H2H_q=K.dot(html,self.W_Q_H2H)
         #H2H_k=K.dot(html,self.W_K_H2H)
         H2H_k=tf.add(tf.expand_dims(K.dot(html,self.W_K_H2H),1),K.gather(htmledgeembedding, H2Hmask))
-        #batchsize htmllength hiddensize
+
         #H2H_e=K.batch_dot(H2H_q,K.permute_dimensions(H2H_k,[0,2,1]))#
         H2H_e=tf.reduce_sum(tf.multiply(tf.expand_dims(H2H_q,1),H2H_k),axis=-1)
         #H2T attention
-        H2T_q=K.dot(html,self.W_Q_H2T)#x(batchsize,sequencelength,hidden size)(hiddensize, hiddensize)(batchsize,sequencelength,hidden size)
+        H2T_q=K.dot(html,self.W_Q_H2T)
         H2T_k=K.dot(text,self.W_K_H2T)
         H2T_e=K.batch_dot(H2T_q,K.permute_dimensions(H2T_k,[0,2,1]))#把k转置，并与q点乘,dot的维度长度必须相同
         #T2H attention
-        T2H_q=K.dot(text,self.W_Q_T2H)#x(batchsize,sequencelength,hidden size)(hiddensize, hiddensize)(batchsize,sequencelength,hidden size)
+        T2H_q=K.dot(text,self.W_Q_T2H)
         T2H_k=K.dot(html,self.W_K_T2H)
         T2H_e=K.batch_dot(T2H_q,K.permute_dimensions(T2H_k,[0,2,1]))#把k转置，并与q点乘,dot的维度长度必须相同
         #T2T attention
-        T2T_q=K.dot(text,self.W_Q_T2T)#x(batchsize,sequencelength,hidden size)(hiddensize, hiddensize)(batchsize,sequencelength,hidden size)
+        T2T_q=K.dot(text,self.W_Q_T2T)
         pos_ids=self.cal_rel_pos_matri(textlength)
-        T2T_k=tf.add(tf.expand_dims(K.dot(text,self.W_K_T2T),1),tf.expand_dims(K.gather(positionembeddings, pos_ids), 0))
+        T2T_k=tf.add(tf.expand_dims(K.dot(text,self.W_K_T2T),1),tf.expand_dims(K.gather(positionembedding, pos_ids), 0))
         T2T_e=tf.reduce_sum(tf.multiply(tf.expand_dims(T2T_q,1),T2T_k),axis=-1)
         #T2T_e=K.batch_dot(T2T_q,K.permute_dimensions(T2T_k,[0,2,1]))#把k转置，并与q点乘,dot的维度长度必须相同
         
@@ -152,21 +154,21 @@ class webformerAttention(Layer):
         html=html1+html2
         text=text1+text2
         if final_layer==False:
-            return [field,text,html,inputs[3],inputs[4],inputs[5],inputs[6],inputs[7],inputs[8],inputs[9]]
+            return [field,text,html,inputs[3],inputs[4],inputs[5],inputs[6],inputs[7],inputs[8]]
         else:
             return [field,text,html]
     
 
 
-    def compute_mask(self, inputs, mask=None):
-        if isinstance(mask, list):
-            mask = mask[0]
-        if self.return_attention:
-            return [mask, None]
-        return mask
+    # def compute_mask(self, inputs, mask=None):
+    #     if isinstance(mask, list):
+    #         mask = mask[0]
+    #     if self.return_attention:
+    #         return [mask, None]
+    #     return mask
     
-    def compute_output_shape(self,input_shape):
-        return (input_shape[0],input_shape[1],self.output_dim)
+    # def compute_output_shape(self,input_shape):
+    #     return (input_shape[0],input_shape[1],self.output_dim)
 
     def cal_rel_pos_matri(self,textlength):
         # batchsequencelist=inputs[1],inputs[4]#数据以batch的形式输入
