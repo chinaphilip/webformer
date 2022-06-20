@@ -9,3 +9,7 @@ model.py 定义了模型的整体结构，最后的输出只是encoder represent
 
 seqselfattention.py 定义了论文中提到的四种attention
 
+bert_word_embedding.dat文件下载链接
+链接：https://pan.baidu.com/s/1yg4mHFKE2KmCHiwhFG0z7w?pwd=dbjx 
+提取码：dbjx
+
