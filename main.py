@@ -58,7 +58,7 @@ bfieldlist=[[tokenizer.convert_tokens_to_ids(tokenizer.tokenize(i))] for i in bf
 bfieldlist=np.array(bfieldlist)
 
 #测试模型是否能跑通，输出是否正确
-model = webformer(tagsize=119,T2Tattentionwidth=4,word_embed_path=r"G:\ner\webformer implementation\bert_word_embedding.dat")
+model = webformer(tagsize=119,T2Tattentionwidth=4,word_embed_path=r"G:\ner\webformer implementation\bert_word_embedding.dat")#这个embedding文件有提供下载方式
 output=model([bfieldlist[:2],btextlist[:2],bhtmllist[:2],[bhtmledgelist[:2],binnertextlist[:2]],btextsequencelist[:2]])#batchsize设为2，再高一点他就爆内存了
 model.summary()
 model.get_layer()
