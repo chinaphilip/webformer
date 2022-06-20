@@ -25,7 +25,7 @@ for index,tag in enumerate(taglist):
     tagdict[tag]=index+1
 
 
-#准备batch训练集和测试集
+#准备测试样本
 bfieldlist=[]
 bhtmllist=[]
 btextlist=[]
