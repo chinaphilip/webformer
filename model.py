@@ -7,19 +7,20 @@ Created on Mon May  2 03:50:01 2022
 
 import tensorflow as tf
 from seqselfattention import webformerAttention
-from embedding_layer import Myembeddinglayer
+from embedding_layer import Myembeddinglayer,My_init
 
-class MyModel(tf.keras.Model):
+class webformer(tf.keras.Model):
 
-  def __init__(self):
+  def __init__(self,tagsize,T2Tattentionwidth,word_embed_path, maxposition=4):
     super().__init__()
-    self.embedding_layer=Myembeddinglayer(T2Tattentionwidth=6,positionembeddinglength=4)
-    self.seqselfattention1=webformerAttention()
-    self.seqselfattention2=webformerAttention()
-    self.seqselfattention3=webformerAttention()
-    self.seqselfattention4=webformerAttention()
-    self.seqselfattention5=webformerAttention()
-    self.seqselfattention6=webformerAttention()
+#    self.tagsize=tagsize
+    self.embedding_layer=Myembeddinglayer(T2Tattentionwidth,tagsize,wordembedinit=My_init(path=word_embed_path))#T2Tattentionwidth=6,
+    self.seqselfattention1=webformerAttention(maxposition=4)
+    self.seqselfattention2=webformerAttention(maxposition=4)
+    self.seqselfattention3=webformerAttention(maxposition=4)
+    self.seqselfattention4=webformerAttention(maxposition=4)
+    self.seqselfattention5=webformerAttention(maxposition=4)
+    self.seqselfattention6=webformerAttention(maxposition=4)
 #    self.dense1 = tf.keras.layers.Dense(4, activation=tf.nn.relu)
 #    self.dense2 = tf.keras.layers.Dense(5, activation=tf.nn.softmax)
 
@@ -38,10 +39,3 @@ class MyModel(tf.keras.Model):
 
 
 
-
-
-
-
-model = MyModel()
-model.get_layer
-model.summary()
