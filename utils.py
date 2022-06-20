@@ -12,8 +12,8 @@ def travesehtml(presentnode, htmllist, textlist, htmledgelist, innertextlist, te
         textlist: 存储网页所有的字符
         htmledgelist: 存储tag节点之间的关系,存储方式如下,index为该节点在htmllist中的位置
             1   parent [parent node index, 1, child node index]
-            2   child  [parent node index, 2, child node index]
-            3   sibling [parent node index, 3, child node index]
+            2   child  [child node index, 2, parent node index]
+            3   sibling [sibling node index, 3, sibling node index]
         innertextlist:这个存储的是tag节点与字符之间的关系，格式为[tag_index,word_index]
         textsequencelist:存储字符之间的关系，就是任意两个字符属不属于同一个textnode，关系表示的方式是存储textlist的划分标记[first_textnode_length,second_textnode_length....]
 
