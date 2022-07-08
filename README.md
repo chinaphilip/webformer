@@ -1,6 +1,6 @@
 # webformer
 目前的实现方式有一点问题，我的输入样本中每个网页的字符长度大概是1000左右，在计算attention的时候，relative position embedding矩阵会特别的大，会爆内存
-
+感兴趣的可以去参考bigbert的实现代码
 模型主要是包含三个文件
 
 embeddinglayer.py 这个文件定义了网页标记符和字符的embedding,计算了下面的attention layer中需要用到的四种mask
