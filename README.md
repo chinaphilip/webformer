@@ -1,4 +1,4 @@
-# webformer
+# webformer：The Web-page Transformer for Structure Information Extraction
 https://arxiv.org/abs/2202.00217
 
 这个仓库是试图复现上面的这篇论文
