@@ -16,6 +16,6 @@ seqselfattention.py 定义了论文中提到的四种attention
 运行方式：打开main.py从上往下运行即可
 
 bert_word_embedding.dat文件下载链接
-链接：https://pan.baidu.com/s/1yg4mHFKE2KmCHiwhFG0z7w?pwd=dbjx 
-提取码：dbjx
+链接：https://pan.baidu.com/s/1Rxei5cG3q45Hts3YpOhnCw?pwd=nb8u 
+提取码：nb8u
 
