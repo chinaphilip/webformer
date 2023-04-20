@@ -2,7 +2,7 @@
 https://arxiv.org/abs/2202.00217
 ![avatar](/webformer.PNG)
 
-This paper try to reimplement the webformer, the author has share part of the core code to me. If interested, you can request this piece of code through my email aauiuui@163.com
+This paper try to reimplement the webformer. The author has share part of the core code to me. If interested, you can request this piece of code through my email aauiuui@163.com
 
 这个仓库是试图复现上面的这篇论文
 目前的实现方式有一点问题，我的输入样本中每个网页的字符长度大概是1000左右，在计算attention的时候，relative position embedding矩阵会特别的大，会爆内存
